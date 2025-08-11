@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تولید فاکتور</title>
+    <script src='jspdf.umd.min.js'></script>
+    <script src="jspdf.plugin.autotable.min.js"></script>
+    <script src="num2persian.min.js"></script>
+    <script src="jalaali.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h2>تولید فاکتور فروش</h2>
+    <form id="invoiceForm">
+        <div class="form-section">
+            <h3>هدر فاکتور</h3>
+            <div class="adadaval">
+                <div class="input_box">
+                    <label>شماره فاکتور</label>
+                    <input type="text" id="invoiceNumber" placeholder="مثال: 22">
+                </div>
+                <div class="input_box">
+                    <label>شماره سند</label>
+                    <input type="text" id="documentNumber" placeholder="مثال: 022">
+                </div>
+                <div class="input_box">
+                    <label>کد</label>
+                    <input type="text" id="code" placeholder="مثال: 00122">
+                </div>
+            </div>
+            <div class="tarikhosaat">
+                <div class="input_box">
+                    <label>تاریخ:</label>
+                    <input type="text" id="invoiceDate" placeholder="مثال: 1403/07/03">
+                </div>
+                <div class="input_box">
+                    <label>ساعت:</label>
+                    <input type="text" id="invoiceTime" placeholder="مثال: 11:30">
+                </div>
+            </div>
+            <div class="input_box">
+                <label>نام مشتری:</label>
+                <input type="text" id="customerName" placeholder="نام مشتری">
+            </div>
+            <div class="input_box">
+                <label>تلفن:</label>
+                <input type="text" id="customerPhone" placeholder="تلفن مشتری">
+            </div>
+            <div class="input_box">
+                <label>همراه:</label>
+                <input type="text" id="customerMobile" placeholder="موبایل مشتری">
+            </div>
+            <div class="input_box">
+                <label>آدرس:</label>
+                <input type="text" id="customerAddress" placeholder="آدرس مشتری">
+            </div>
+            <div class="input_box">
+                <label>بده کاری قبل از این فاکتور</label>
+                <input type="number" id="bedehighabli" placeholder="بدهی قبل این فاکتور">
+            </div>
+            <div class="input_box">
+                <label>مانده حساب این فاکتور</label>
+                <input type="number" id="mandehesab" placeholder="بدهی روی همین فاکتور">
+            </div>
+            <div class="input_box">
+                <label>تخفیف روی جمع کل</label>
+                <input type="number" id="percentonAll" placeholder="مثلا 10" min="0" max="100">
+            </div>
+
+        </div>
+
+        <div class="form-section">
+            <h3>اقلام فاکتور</h3>
+            <div id="items">
+                <div class="item-row">
+                    <div class="had">
+                        <div class="hediye">
+                            <input type="checkbox" class="item-gift"> هدیه
+                        </div>
+                        <input type="text" class="item-code" placeholder="کد کالا">
+                        <button type="button" class="apply-item-btn">اعمال</button>
+                    </div>
+                    <div class="body">
+                        <div class="input_box" style="width: 94%;">
+                            <label>نام کالا</label>
+                            <input type="text" class="item-name" placeholder="نام کالا">
+                        </div>
+                        <div class="input_box">
+                            <label>تعداد کارتن</label>
+                            <input type="number" class="item-carton" placeholder="کارتن">
+                        </div>
+                        <div class="input_box">
+                            <label>تعداد در کارتن</label>
+                            <input type="number" class="item-unit" placeholder="عدد">
+                        </div>
+                        <div class="input_box">
+                            <label>تعداد کل</label>
+                            <input type="number" class="item-quantity" placeholder="تعداد کل">
+                        </div>
+                        <div class="input_box">
+                            <label>قیمت واحد</label>
+                            <input type="text" class="item-price" placeholder="بهای واحد">
+                        </div>
+                        <div class="input_box" style="width: 94%;">
+                            <label>درصد تخفیف</label>
+                            <input type="number" class="item-discount" placeholder="درصد تخفیف" value="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="addnewitem" onclick="addItem()">افزودن قلم جدید</button>
+        </div>
+
+        <div class="form-section">
+            <h3>توضیحات و اطلاعات پرداخت</h3>
+            <div class="input_box">
+                <label>توضیحات:</label>
+                <textarea id="notes" placeholder="توضیحات">بدون توضیح</textarea>
+            </div>
+            <div class="input_box">
+                <label>کارشناس فروش:</label>
+                <input type="text" id="salesAgent" value="علی وحدانی" readonly>
+            </div>
+            <div class="input_box">
+                <label>شماره کارت:</label>
+                <input type="text" id="cardNumber" value="0210-9465-6315-5894" readonly>
+            </div>
+            <div class="input_box">
+                <label>شبا:</label>
+                <input type="text" id="iban" value="IR53-0509-0261-0000-1000-0130" readonly>
+            </div>
+
+        </div>
+
+        <button type="button" class="creatpdf" onclick="generatePDF()">تولید PDF</button>
+    </form>
+
+    <script>
+        // متغیر برای ذخیره داده‌های JSON
+        let products = [];
+
+        // بارگذاری داده‌ها از data.json
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch('https://raw.githubusercontent.com/mvahdani1385/list-gheymat/main/data.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('خطا در بارگذاری فایل JSON');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    products = data;
+                    // افزودن listener برای دکمه‌های اعمال موجود
+                    document.querySelectorAll('.apply-item-btn').forEach(btn => {
+                        btn.addEventListener('click', () => applyItemData(btn.closest('.item-row')));
+                    });
+                })
+                .catch(error => {
+                    alert('خطا در بارگذاری داده‌ها: ' + error.message);
+                });
+
+            // تنظیم تاریخ و ساعت
+            const now = new Date();
+            const jDate = window.jalaali.toJalaali(now.getFullYear(), now.getMonth() + 1, now.getDate());
+            const dateStr = `${jDate.jy}/${String(jDate.jm).padStart(2, '0')}/${String(jDate.jd).padStart(2, '0')}`;
+            const timeStr = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('invoiceDate').value = dateStr;
+            document.getElementById('invoiceTime').value = timeStr;
+        });
+
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('item-gift')) {
+                const row = e.target.closest('.item-row');
+                if (e.target.checked) {
+                    row.style.backgroundColor = '#d6eaff'; // آبی ملایم
+                    document.getElementById('items').appendChild(row);
+                } else {
+                    row.style.backgroundColor = ''; // حذف رنگ
+                }
+            }
+        });
+
+        document.addEventListener('input', function (e) {
+            if (e.target.classList.contains('item-price')) {
+                let input = e.target;
+                let rawValue = input.value.replace(/,/g, ''); // حذف کاماها
+                if (rawValue === '') {
+                    input.value = '';
+                    return;
+                }
+                let numericValue = rawValue.replace(/\D/g, ''); // حذف کاراکترهای غیرعددی
+                if (numericValue === '') {
+                    input.value = '';
+                    return;
+                }
+                let formatted = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ","); // افزودن کاما
+                input.value = formatted;
+            }
+        });
+
+
+        function addItem() {
+            const itemsDiv = document.getElementById('items');
+            const newItem = document.createElement('div');
+            newItem.className = 'item-row';
+
+            newItem.innerHTML = `
+                
+                    <div class="had">
+                        <div class="hediye">
+                            <input type="checkbox" class="item-gift"> هدیه
+                        </div>
+                        <input type="text" class="item-code" placeholder="کد کالا">
+                        <button type="button" class="apply-item-btn">اعمال</button>
+                        <button type="button" class="remove-item-btn">حذف</button>
+                    </div>
+                    <div class="body">
+                        <div class="input_box" style="width: 94%;">
+                            <label>نام کالا</label>
+                            <input type="text" class="item-name" placeholder="نام کالا">
+                        </div>
+                        <div class="input_box">
+                            <label>تعداد کارتن</label>
+                            <input type="number" class="item-carton" placeholder="کارتن">
+                        </div>
+                        <div class="input_box">
+                            <label>تعداد در کارتن</label>
+                            <input type="number" class="item-unit" placeholder="عدد">
+                        </div>
+                        <div class="input_box">
+                            <label>تعداد کل</label>
+                            <input type="number" class="item-quantity" placeholder="تعداد کل">
+                        </div>
+                        <div class="input_box">
+                            <label>قیمت واحد</label>
+                            <input type="text" class="item-price" placeholder="بهای واحد">
+                        </div>
+                        <div class="input_box" style="width: 94%;">
+                            <label>درصد تخفیف</label>
+                            <input type="number" class="item-discount" placeholder="درصد تخفیف" value="0">
+                        </div>
+                    </div>
+            `;
+
+            itemsDiv.appendChild(newItem);
+
+            // افزودن listener به دکمه حذف
+            const removeBtn = newItem.querySelector('.remove-item-btn');
+            removeBtn.addEventListener('click', () => {
+                itemsDiv.removeChild(newItem);
+            });
+
+            // افزودن listener به دکمه اعمال
+            const applyBtn = newItem.querySelector('.apply-item-btn');
+            applyBtn.addEventListener('click', () => applyItemData(newItem));
+        }
+
+        function applyItemData(itemRow) {
+            const codeInput = itemRow.querySelector('.item-code').value;
+            const product = products.find(p => p["کد کالا"] === codeInput);
+
+            if (product) {
+                // تعیین نوع محصول بر اساس API
+                let productType = "روغن موتور بنزینی"; // پیش‌فرض
+                if (product["API"] === "HH") {
+                    productType = "روغن هیدرولیک";
+                } else if (["CH_4", "CD"].includes(product["API"])) {
+                    productType = "روغن دیزل";
+                } else if (["GL_4", "GL_1"].includes(product["API"])) {
+                    productType = "واسکازین";
+                }
+
+                // پر کردن فیلد نام کالا
+                const itemName = `${productType} ${product["لیتراژ"]} ${product["GRAD"]} ${product["API"] ? product["API"] : ''}`.trim();
+                itemRow.querySelector('.item-name').value = itemName;
+
+                // پر کردن فیلد بهای واحد
+                itemRow.querySelector('.item-price').value = product["قیمت (ریال)"];
+
+                // پر کردن تعداد در کارتن به‌عنوان پیش‌فرض
+                itemRow.querySelector('.item-unit').value = product["تعداد در کارتن"];
+            } else {
+                alert("کد کالا یافت نشد!");
+            }
+        }
+
+        document.addEventListener('input', (e) => {
+            if (e.target.classList.contains('item-carton')) {
+                const itemRow = e.target.closest('.item-row');
+                const adad = parseFloat(itemRow.querySelector('.item-unit').value) || 0;
+                const tedadKol = parseFloat(e.target.value) * adad;
+                itemRow.querySelector('.item-quantity').value = tedadKol || 0;
+            }
+        });
+
+
+
+
+
+
+        function rightAlignText(doc, text, margin, y) {
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const textWidth = doc.getTextWidth(text);
+            const x = pageWidth - textWidth - margin;
+            doc.text(text, x, y);
+        }
+
+        function rearrangeWords(text) {
+            const words = text.trim().split(/\s+/);
+            function isEnglishOrNumber(word) {
+                return !(/[آ-ی]/.test(word));
+            }
+            const englishOrNumberWords = [];
+            const persianWords = [];
+
+            for (const w of words) {
+                if (isEnglishOrNumber(w)) {
+                    englishOrNumberWords.push(w);
+                } else {
+                    persianWords.push(w);
+                }
+            }
+            return [...englishOrNumberWords, ...persianWords].join(' ');
+        }
+
+        function separateThousands(input) {
+            let str = input.toString();
+            return str.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            var doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+            doc.addFont('Vazirmatn-Light.ttf', 'Far_Nazanin', 'normal');
+            doc.setFont('Far_Nazanin');
+
+            // هدر فاکتور
+            doc.setFontSize(20);
+            doc.text('فاکتور فروش', 99, 15);
+            doc.setFontSize(9);
+            rightAlignText(doc, `شماره : ${document.getElementById('invoiceNumber').value}`, 150, 5);
+            rightAlignText(doc, `شماره سند : ${document.getElementById('documentNumber').value}`, 150, 12);
+            rightAlignText(doc, `ساعت و تاریخ : ${document.getElementById('invoiceTime').value}   ${document.getElementById('invoiceDate').value}`, 150, 19);
+            rightAlignText(doc, `کد : ${document.getElementById('code').value}`, 150, 26);
+            rightAlignText(doc, `صورت حساب فروشگاه / جناب آقای : ${document.getElementById('customerName').value}`, 10, 26);
+            rightAlignText(doc, `تلفن: ${document.getElementById('customerPhone').value}`, 10, 33);
+            rightAlignText(doc, `همراه: ${document.getElementById('customerMobile').value}`, 50, 33);
+            rightAlignText(doc, `آدرس: ${document.getElementById('customerAddress').value}`, 90, 33);
+
+            // جدول اقلام
+            const headers = [
+                ['ردیف', 'کد کالا', 'نام کالا', 'کارتن', 'عدد', 'تعداد کل', 'بهای واحد', 'درصد تخفیف', 'مبلغ کل']
+            ];
+
+            const data = [];
+            let total = 0;
+            let totalDiscount = 0;
+            let sumCarton = 0;
+            let sumUnit = 0;
+            let sumQuantity = 0;
+            let sumTotalPrice = 0;
+
+            const items = document.querySelectorAll('.item-row');
+            let rowNumber = 1;
+            let totalBeforePercentonAll = 0;
+            items.forEach((item) => {
+                const code = item.querySelector('.item-code').value;
+                const name = item.querySelector('.item-name').value;
+                const carton = parseInt(item.querySelector('.item-carton').value) || 0;
+                const unit = parseInt(item.querySelector('.item-unit').value) || 0;
+                const quantity = parseInt(item.querySelector('.item-quantity').value) || 0;
+                const priceStr = item.querySelector('.item-price').value.replace(/,/g, '');
+                const price = parseFloat(priceStr) || 0;
+                let discount = parseFloat(item.querySelector('.item-discount').value) || 0;
+                const isGift = item.querySelector('.item-gift').checked;
+
+                if (isGift) {
+                    discount = 100;  // تخفیف 100٪ برای هدیه
+                }
+
+                const itemTotal = quantity * price * (1 - discount / 100);
+
+                // در اینجا اگر هدیه هست، ردیف "هدیه" و نام کالا بدون "(هدیه)"
+                data.push([
+                    isGift ? "هدیه" : rowNumber,  // ستون ردیف
+                    code,
+                    name,                         // فقط نام کالا، بدون (هدیه)
+                    carton,
+                    unit,
+                    quantity,
+                    separateThousands(price),
+                    `${discount}%`,
+                    separateThousands(itemTotal.toFixed(0))
+                ]);
+
+                rowNumber++;
+
+                total += itemTotal;
+                totalDiscount += quantity * price * (discount / 100);
+                sumCarton += carton;
+                sumUnit += unit;
+                sumQuantity += quantity;
+                sumTotalPrice += itemTotal;
+                totalBeforePercentonAll += itemTotal;
+            });
+
+
+            // حالا بعد از حلقه تخفیف کلی را یکبار اعمال کن
+            const percentonAll = parseInt(document.getElementById('percentonAll').value) || 0;
+            if (percentonAll > 0) {
+                const discountOnTotal = totalBeforePercentonAll * (percentonAll / 100);
+                totalDiscount += discountOnTotal;
+
+                total = totalBeforePercentonAll - discountOnTotal;
+            } else {
+                total = totalBeforePercentonAll;
+            }
+
+
+
+
+            // اضافه کردن ردیف جمع کل
+            data.push([
+                '-',
+                '-',
+                'جمع کل فاکتور',
+                sumCarton,
+                sumUnit,
+                sumQuantity,
+                '-',
+                '-',
+                separateThousands(sumTotalPrice.toFixed(0))
+            ]);
+
+            // معکوس کردن ستون‌ها
+            const reversedHeaders = [...headers[0]].reverse();
+            const reversedData = data.map(row => [...row].reverse());
+
+            doc.autoTable({
+                head: [reversedHeaders],
+                body: reversedData,
+                styles: {
+                    halign: 'center',
+                    font: 'Far_Nazanin',
+                    fontSize: 8,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.1,
+                    fillColor: false,
+                    cellPadding: 1
+                },
+                headStyles: {
+                    fillColor: false,
+                    textColor: [0, 0, 0],
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.1,
+                    cellPadding: 1
+                },
+                bodyStyles: {
+                    fillColor: false,
+                    textColor: [0, 0, 0],
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.1,
+                    cellPadding: 1
+                },
+                margin: { top: 20, left: 10, right: 10 },
+                startY: 40,
+                didParseCell: function (data) {
+                    if (data.section === 'body' && data.column.index === 6) {
+                        data.cell.styles.halign = 'right';
+                    }
+                    if (data.section === 'body' && data.column.index === 6) {
+                        data.cell.text = data.cell.text.map(text => `\u202B${rearrangeWords(text)}`);
+                        data.cell.styles.halign = 'right';
+                    }
+                    if (data.section === 'body' && data.row.index === reversedData.length - 1) {
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                    if (data.section === 'body') {
+                        const itemName = data.row.raw[8]; // ستون نام کالا
+                        if (typeof itemName === 'string' && itemName.includes('هدیه')) {
+                            data.cell.styles.fillColor = [255, 182, 193]; // صورتی روشن
+                            // یا می‌تونی از رنگ آبی روشن: [230, 240, 255]
+                        }
+                    }
+
+                    if (data.section === 'body' && data.row.index === reversedData.length - 1) {
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+
+                }
+            });
+
+            let y = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY + 10 : 60;
+
+            doc.setLineWidth(0.1);
+            doc.line(10, y - 5, doc.internal.pageSize.getWidth() - 10, y - 5);
+            doc.line(40, y - 5, 40, y + 25);
+            doc.line(10, y + 25, doc.internal.pageSize.getWidth() - 10, y + 25);
+
+            let bedehighabli = document.getElementById('bedehighabli').value;
+            if (bedehighabli == '') { bedehighabli = 0 }
+            let mandehesab = document.getElementById('mandehesab').value;
+            if (mandehesab == '') { mandehesab = 0 }
+
+            total = (total + Number(bedehighabli)) - Number(mandehesab);
+
+            doc.text(`جمع تخفیف`, 43, y);
+            rightAlignText(doc, `${percentonAll} %`, 175, y);
+            rightAlignText(doc, `${separateThousands(totalDiscount.toFixed(0))} ریال`, 175, y + 20);
+            rightAlignText(doc, `مبلغ فاکتور : ${num2persian(total)} ریال`, 11, y);
+            rightAlignText(doc, `جمع کل )بدهکاری( شما ما قبل این فاکتور: ${separateThousands(bedehighabli)} ریال`, 11, y + 7);
+            rightAlignText(doc, `جمع کل مانده حساب )بدهکاری( شما: ${separateThousands(mandehesab)} ریال`, 11, y + 14);
+            rightAlignText(doc, `جمع کل )بدهکاری( شما با احتساب این فاکتور: ${separateThousands(total.toFixed(0))} ریال`, 11, y + 21);
+            rightAlignText(doc, `توضیحات : ${document.getElementById('notes').value}`, 11, y + 30);
+            rightAlignText(doc, `کارشناس فروش : ${document.getElementById('salesAgent').value}`, 11, y + 35);
+            rightAlignText(doc, 'مهر و امضاء خریدار', 50, y + 45);
+            rightAlignText(doc, 'مهر و امضاء فروشنده', 125, y + 45);
+            // rightAlignText(doc, `لطفاً مبلغ فاکتور به کارت ${document.getElementById('cardNumber').value} یا شبا ${document.getElementById('iban').value} به نام علی وحدانی واریز شود`, 11, y + 60);
+            rightAlignText(doc, `.به نام علی وحدانی واریز شود  ${document.getElementById('iban').value} لطفا مبلغ فاکتور به کارت رفاه  ${document.getElementById('cardNumber').value} یا شماره شبا `, 11, y + 60);
+            doc.line(10, y + 65, doc.internal.pageSize.getWidth() - 10, y + 65);
+            rightAlignText(doc, '.اقلام این فاکتور تا تسویه نهایی بعنوان امانت نزد خریدار می‌باشد', 11, y + 70);
+
+            doc.save(` آقای ${document.getElementById('customerName').value} | ${document.getElementById('invoiceDate').value}.pdf`);
+        }
+    </script>
+</body>
+
+</html>
